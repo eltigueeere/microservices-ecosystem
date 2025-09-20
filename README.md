@@ -120,10 +120,10 @@ GET "security_key:test:private"
 ## 🔧 Quick Workflow Example with Compose
 
 ```bash
-# 1️⃣ Stop & remove 
+# 1️⃣ Stop 
 docker stop my-ggo-cuentas my-crud my-middleware my-redis my-mysql
 
-# 2 Stop & remove 
+# 2 Remove 
 docker rm my-ggo-cuentas my-crud my-middleware my-redis my-mysql
 
 # 3. Rebuild project 
