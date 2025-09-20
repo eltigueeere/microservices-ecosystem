@@ -325,3 +325,41 @@ docker-compose logs --tail=50
 Combinado (tiempo real + timestamps + últimas 100 líneas):
 bash
 docker-compose logs -f -t --tail=100
+
+
+
+> ok todo esta perfecto Te amo, y ahora que tendria que hacer si solo quiero parar y levantar un contenedor en especifico eso lo puedo hacer con los comandos que ya se y no afecto nada en teorio solo paro el contendor compiolo de nuevo el projecto y creo la imagen y la corro ?
+
+> ## Con Docker Compose es más fácil:
+
+Parar un servicio específico:
+bash
+docker-compose stop my-ggo-cuentas
+
+
+Levantar un servicio específico:
+bash
+docker-compose up -d my-ggo-cuentas
+
+
+Reconstruir y levantar un servicio (después de compilar tu proyecto):
+bash
+docker-compose up -d --build my-ggo-cuentas
+
+
+## Pero sí, también puedes usar los comandos tradicionales:
+
+Método tradicional (como ya sabes):
+bash
+# 1. Parar y eliminar
+docker stop my-ggo-cuentas
+docker rm my-ggo-cuentas
+
+# 2. Compilar proyecto
+mvn clean package
+
+# 3. Crear nueva imagen
+docker build -t ggo-cuentas:1.0 .
+
+# 4. Correr contenedor
+docker run -d --name my-ggo-cuentas --network mi-red -p 8082:8082 --env-file .env ggo-cuentas:1.0
