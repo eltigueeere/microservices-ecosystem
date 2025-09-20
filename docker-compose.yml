@@ -1,0 +1,108 @@
+version: '3.8'
+
+# Docker Compose orchestration for microservices architecture
+# This file manages 5 containers: MySQL, Redis, and 3 Spring Boot applications
+# Dependencies: MySQL + Redis → crud-cuentas + middleware-cuentas → ggo-cuentas
+
+services:
+  # Database service - MySQL 8.0
+  # Used by: crud-cuentas microservice
+  my-mysql:
+    image: mysql:8.0
+    container_name: my-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: cuentasUsuariosdb
+      MYSQL_USER: user1
+      MYSQL_PASSWORD: 12345
+    ports:
+      - "3306:3306"
+    networks:
+      - mi-red
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Cache service - Redis 7
+  # Used by: ggo-cuentas microservice for security keys storage
+  my-redis:
+    image: redis:7
+    container_name: my-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - mi-red
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Base microservice - CRUD operations for accounts
+  # Depends on: MySQL database
+  # Consumed by: ggo-cuentas via HTTP requests
+  my-crud:
+    image: crud:1.0
+    container_name: my-crud
+    environment:
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+    ports:
+      - "8081:8081"
+    networks:
+      - mi-red
+    depends_on:
+      my-mysql:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Middleware microservice - Business logic layer
+  # Consumed by: ggo-cuentas via HTTP requests
+  my-middleware:
+    image: middleware:1.0
+    container_name: my-middleware
+    ports:
+      - "8080:8080"
+    networks:
+      - mi-red
+    restart: unless-stopped
+
+  # Main microservice - GGO Cuentas (most important)
+  # Depends on: Redis for caching, consumes crud and middleware via HTTP
+  # This is the main entry point of the application
+  my-ggo-cuentas:
+    image: ggo-cuentas:1.0
+    container_name: my-ggo-cuentas
+    environment:
+      - SPRING_REDIS_URL=${SPRING_REDIS_URL}
+      - SPRING_REDIS_PORT=${SPRING_REDIS_PORT}
+      - SPRING_REDIS_TIMEOUT=${SPRING_REDIS_TIMEOUT}
+    ports:
+      - "8082:8082"
+    networks:
+      - mi-red
+    depends_on:
+      my-redis:
+        condition: service_healthy
+      my-crud:
+        condition: service_started
+      my-middleware:
+        condition: service_started
+    restart: unless-stopped
+
+# Network configuration
+# Creates isolated network for all containers to communicate
+networks:
+  mi-red:
+    driver: bridge
+    name: mi-red
+
+# Persistent storage for MySQL data
+# Ensures database data survives container restarts
+volumes:
+  mysql_data:
+    driver: local
