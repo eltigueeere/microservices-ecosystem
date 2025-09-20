@@ -117,7 +117,24 @@ GET "security_key:test:private"
 
 ---
 
-## 🔧 Quick Workflow Example
+## 🔧 Quick Workflow Example with Compose
+
+```bash
+# 1️⃣ Stop & remove 
+docker stop my-ggo-cuentas my-crud my-middleware my-redis my-mysql
+
+# 2 Stop & remove 
+docker rm my-ggo-cuentas my-crud my-middleware my-redis my-mysql
+
+# 3. Rebuild project 
+bash
+docker-compose up -d
+
+# 4. Verificar que todo esté funcionando:
+docker-compose ps
+```
+
+## 🔧 Quick Workflow Example without Compose
 
 ```bash
 # 1️⃣ Stop & remove old container
