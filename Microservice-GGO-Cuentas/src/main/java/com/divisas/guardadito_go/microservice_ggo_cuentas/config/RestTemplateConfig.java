@@ -9,15 +9,15 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class RestTemplateConfig {
 
-    @Value("${external.microservice.timeout}")
-    private int timeout;
+  @Value("${external.microservice.timeout}")
+  private int timeout;
 
-    @Bean
-    public RestTemplate restTemplate() {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(timeout);
-        factory.setReadTimeout(timeout);
-        
-        return new RestTemplate(factory);
-    }
+  @Bean
+  public RestTemplate restTemplate() {
+    SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+    factory.setConnectTimeout(timeout);
+    factory.setReadTimeout(timeout);
+
+    return new RestTemplate(factory);
+  }
 }

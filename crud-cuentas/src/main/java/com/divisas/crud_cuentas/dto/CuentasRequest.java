@@ -4,33 +4,34 @@ import jakarta.validation.constraints.NotBlank;
 
 public class CuentasRequest {
 
-    Long idCuenta;
-    @NotBlank(message = "Cuenta requerida")
-    String cuenta;
-    String description;
+  Long idCuenta;
 
-    public String getDescription() {
-        return description;
-    }
+  @NotBlank(message = "Cuenta requerida")
+  String cuenta;
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+  String description;
 
-    public Long getIdCuenta() {
-        return idCuenta;
-    }
+  public String getDescription() {
+    return description;
+  }
 
-    public void setIdCuenta(Long idCuenta) {
-        this.idCuenta = idCuenta;
-    }
+  public void setDescription(String description) {
+    this.description = description;
+  }
 
-    public String getCuenta() {
-        return cuenta;
-    }
+  public Long getIdCuenta() {
+    return idCuenta;
+  }
 
-    public void setCuenta(String cuenta) {
-        this.cuenta = cuenta;
-    }
+  public void setIdCuenta(Long idCuenta) {
+    this.idCuenta = idCuenta;
+  }
 
+  public String getCuenta() {
+    return cuenta;
+  }
+
+  public void setCuenta(String cuenta) {
+    this.cuenta = cuenta;
+  }
 }

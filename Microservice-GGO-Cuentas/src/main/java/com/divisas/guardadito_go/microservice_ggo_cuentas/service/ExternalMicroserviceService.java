@@ -17,99 +17,99 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class ExternalMicroserviceService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ExternalMicroserviceService.class);
+  private static final Logger logger = LoggerFactory.getLogger(ExternalMicroserviceService.class);
 
-    @Autowired
-    private RestTemplate restTemplate;
+  @Autowired private RestTemplate restTemplate;
 
-    @Autowired
-    private EncryptionService encryptionService;
+  @Autowired private EncryptionService encryptionService;
 
-    @Autowired
-    private ExternalMicroserviceConfig config;
+  @Autowired private ExternalMicroserviceConfig config;
 
-    public BusquedaCuentaResponse procesarBusquedaCuenta(BusquedaCuentaRequest request, String idAcceso) {
-        BusquedaCuentaResponse response = null;
-        
-        try {
-            // 1. Descifrar datoBusqueda
-            String datoBusquedaDescifrado = encryptionService.decryptData(request.getDatoBusqueda(), idAcceso);
-            logger.debug("Dato descifrado: {}", datoBusquedaDescifrado);
+  public BusquedaCuentaResponse procesarBusquedaCuenta(
+      BusquedaCuentaRequest request, String idAcceso) {
+    BusquedaCuentaResponse response = null;
 
-            // 2. Crear request para microservicio externo
-            BusquedaCuentaRequest externalRequest = new BusquedaCuentaRequest();
-            externalRequest.setDatoBusqueda(datoBusquedaDescifrado);
-            externalRequest.setIdBusqueda(request.getIdBusqueda());
+    try {
+      // 1. Descifrar datoBusqueda
+      String datoBusquedaDescifrado =
+          encryptionService.decryptData(request.getDatoBusqueda(), idAcceso);
+      logger.debug("Dato descifrado: {}", datoBusquedaDescifrado);
 
-            // 3. Configurar headers
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Content-Type", "application/json");
-            headers.set("x-id-acceso", idAcceso);
+      // 2. Crear request para microservicio externo
+      BusquedaCuentaRequest externalRequest = new BusquedaCuentaRequest();
+      externalRequest.setDatoBusqueda(datoBusquedaDescifrado);
+      externalRequest.setIdBusqueda(request.getIdBusqueda());
 
-            HttpEntity<BusquedaCuentaRequest> entity = new HttpEntity<>(externalRequest, headers);
+      // 3. Configurar headers
+      HttpHeaders headers = new HttpHeaders();
+      headers.set("Content-Type", "application/json");
+      headers.set("x-id-acceso", idAcceso);
 
-            // 4. Configurar timeout y llamar al microservicio externo
-            SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-            factory.setConnectTimeout(config.getTimeout());
-            factory.setReadTimeout(config.getTimeout());
-            restTemplate.setRequestFactory(factory);
-            
-            logger.info("Llamando a microservicio externo: {} {}", config.getMethod(), config.getUrl());
-            ResponseEntity<BusquedaCuentaResponse> responseEntity = restTemplate.exchange(
-                config.getUrl(),
-                HttpMethod.valueOf(config.getMethod()),
-                entity,
-                BusquedaCuentaResponse.class
-            );
+      HttpEntity<BusquedaCuentaRequest> entity = new HttpEntity<>(externalRequest, headers);
 
-            response = responseEntity.getBody();
-            logger.info("Respuesta recibida del microservicio externo");
+      // 4. Configurar timeout y llamar al microservicio externo
+      SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+      factory.setConnectTimeout(config.getTimeout());
+      factory.setReadTimeout(config.getTimeout());
+      restTemplate.setRequestFactory(factory);
 
-            // 5. Cifrar la respuesta que viene en claro del microservicio externo
-            if (response != null && response.getMensaje() != null) {
-                String mensajeCifrado = encryptionService.encryptData(response.getMensaje(), idAcceso);
-                response.setMensaje(mensajeCifrado);
-                logger.debug("Respuesta cifrada para cliente");
-            }
+      logger.info("Llamando a microservicio externo: {} {}", config.getMethod(), config.getUrl());
+      ResponseEntity<BusquedaCuentaResponse> responseEntity =
+          restTemplate.exchange(
+              config.getUrl(),
+              HttpMethod.valueOf(config.getMethod()),
+              entity,
+              BusquedaCuentaResponse.class);
 
-        } catch (Exception e) {
-            logger.error("Error al procesar búsqueda de cuenta: {}", e.getMessage(), e);
-        } finally {
-            // 6. Si no hay respuesta, crear datos de ejemplo cifrados
-            if (response == null) {
-                response = crearRespuestaEjemplo(idAcceso);
-            }
-        }
+      response = responseEntity.getBody();
+      logger.info("Respuesta recibida del microservicio externo");
 
-        return response;
+      // 5. Cifrar la respuesta que viene en claro del microservicio externo
+      if (response != null && response.getMensaje() != null) {
+        String mensajeCifrado = encryptionService.encryptData(response.getMensaje(), idAcceso);
+        response.setMensaje(mensajeCifrado);
+        logger.debug("Respuesta cifrada para cliente");
+      }
+
+    } catch (Exception e) {
+      logger.error("Error al procesar búsqueda de cuenta: {}", e.getMessage(), e);
+    } finally {
+      // 6. Si no hay respuesta, crear datos de ejemplo cifrados
+      if (response == null) {
+        response = crearRespuestaEjemplo(idAcceso);
+      }
     }
 
-    private BusquedaCuentaResponse crearRespuestaEjemplo(String idAcceso) {
-        try {
-            logger.info("Creando respuesta de ejemplo con datos cifrados");
-            
-            // Datos de ejemplo en claro
-            String datosEjemplo = "{\"numeroCuenta\":\"1234567890\",\"titular\":\"Juan Perez\",\"saldo\":15000.50,\"estado\":\"ACTIVA\"}";
-            
-            // Cifrar los datos de ejemplo
-            String datosCifrados = encryptionService.encryptData(datosEjemplo, idAcceso);
-            
-            BusquedaCuentaResponse response = new BusquedaCuentaResponse();
-            response.setMensaje(datosCifrados);
-            response.setFolio("42c66ddd-602a-48cd-9ceb-8a5c9652d6b7");
-            
-            logger.debug("Respuesta de ejemplo creada con datos cifrados");
-            return response;
-            
-        } catch (Exception e) {
-            logger.error("Error al crear respuesta de ejemplo: {}", e.getMessage(), e);
-            
-            // Respuesta de fallback sin cifrado
-            BusquedaCuentaResponse fallbackResponse = new BusquedaCuentaResponse();
-            fallbackResponse.setMensaje("Error interno del servidor");
-            fallbackResponse.setFolio("error-folio");
-            
-            return fallbackResponse;
-        }
+    return response;
+  }
+
+  private BusquedaCuentaResponse crearRespuestaEjemplo(String idAcceso) {
+    try {
+      logger.info("Creando respuesta de ejemplo con datos cifrados");
+
+      // Datos de ejemplo en claro
+      String datosEjemplo =
+          "{\"numeroCuenta\":\"1234567890\",\"titular\":\"Juan Perez\",\"saldo\":15000.50,\"estado\":\"ACTIVA\"}";
+
+      // Cifrar los datos de ejemplo
+      String datosCifrados = encryptionService.encryptData(datosEjemplo, idAcceso);
+
+      BusquedaCuentaResponse response = new BusquedaCuentaResponse();
+      response.setMensaje(datosCifrados);
+      response.setFolio("42c66ddd-602a-48cd-9ceb-8a5c9652d6b7");
+
+      logger.debug("Respuesta de ejemplo creada con datos cifrados");
+      return response;
+
+    } catch (Exception e) {
+      logger.error("Error al crear respuesta de ejemplo: {}", e.getMessage(), e);
+
+      // Respuesta de fallback sin cifrado
+      BusquedaCuentaResponse fallbackResponse = new BusquedaCuentaResponse();
+      fallbackResponse.setMensaje("Error interno del servidor");
+      fallbackResponse.setFolio("error-folio");
+
+      return fallbackResponse;
     }
+  }
 }
